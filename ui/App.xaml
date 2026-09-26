@@ -1,0 +1,14 @@
+<Application x:Class="JavaStudio.App"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+  <Application.Resources>
+    <ResourceDictionary>
+      <ResourceDictionary.MergedDictionaries>
+        <!-- 第 0 本是主题，运行时整本换掉来切深浅（见 Theme.cs） -->
+        <ResourceDictionary Source="Themes/Light.xaml"/>
+        <!-- 第 1 本是控件样式，不参与切换 -->
+        <ResourceDictionary Source="Themes/Controls.xaml"/>
+      </ResourceDictionary.MergedDictionaries>
+    </ResourceDictionary>
+  </Application.Resources>
+</Application>

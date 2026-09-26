@@ -1,0 +1,93 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Java 语法高亮。AvalonEdit 的 .xshd 格式。
+
+  两个坑：
+    1) Span 上不能写 name 属性。schema 里 Span 没有这个属性，写了以后
+       HighlightingLoader 会抛 HighlightingDefinitionInvalidException——
+       抛在 OpenFile 里，表现就是「双击文件程序直接没」，看不出是高亮的问题。
+    2) 顺序有讲究：注释和字符串要先匹配，否则 "//" 里的 " 会被当成字符串开头，
+       后面整行就全绿了。关键字排在标识符规则前面同理。
+-->
+<SyntaxDefinition name="Java" extensions=".java"
+                  xmlns="http://icsharpcode.net/sharpdevelop/syntaxdefinition/2008">
+
+  <Color name="Default"    foreground="#{S_THEME}" />
+  <Color name="Comment"    foreground="#8A8A8A" />
+  <Color name="String"     foreground="#50A14F" />
+  <Color name="Char"       foreground="#50A14F" />
+  <Color name="Keyword"    foreground="#A626A4" />
+  <Color name="Type"       foreground="#4078F2" />
+  <Color name="Number"     foreground="#986801" />
+  <Color name="Annotation" foreground="#986801" />
+
+  <RuleSet>
+    <!-- 普通代码的默认色。没这个，AvalonEdit 会用一套写死的颜色，
+         切主题后普通代码（黑色/白色）不跟着变——就是用户报的那个 bug。
+         这里用 #{S_THEME} 占位，加载时按当前主题换成实际色值。 -->
+    <Rule color="Default">.</Rule>
+
+    <Span color="Comment" multiline="true">
+      <Begin>/\*</Begin>
+      <End>\*/</End>
+    </Span>
+    <Span color="Comment">
+      <Begin>//</Begin>
+    </Span>
+    <Span color="String" multiline="true">
+      <Begin>"""</Begin>
+      <End>"""</End>
+    </Span>
+    <Span color="String" multiline="false">
+      <Begin>"</Begin>
+      <End>"</End>
+      <RuleSet>
+        <Span color="Char" multiline="false">
+          <Begin>\\</Begin>
+          <End>.</End>
+        </Span>
+      </RuleSet>
+    </Span>
+    <Span color="Char" multiline="false">
+      <Begin>'</Begin>
+      <End>'</End>
+      <RuleSet>
+        <Span color="Char" multiline="false">
+          <Begin>\\</Begin>
+          <End>.</End>
+        </Span>
+      </RuleSet>
+    </Span>
+
+    <Rule color="Annotation">@[A-Za-z_][A-Za-z0-9_.]*</Rule>
+
+    <Keywords color="Keyword">
+      <Word>abstract</Word><Word>assert</Word><Word>break</Word><Word>case</Word>
+      <Word>catch</Word><Word>class</Word><Word>const</Word><Word>continue</Word>
+      <Word>default</Word><Word>do</Word><Word>else</Word><Word>enum</Word>
+      <Word>extends</Word><Word>final</Word><Word>finally</Word><Word>for</Word>
+      <Word>goto</Word><Word>if</Word><Word>implements</Word><Word>import</Word>
+      <Word>instanceof</Word><Word>interface</Word><Word>native</Word><Word>new</Word>
+      <Word>package</Word><Word>private</Word><Word>protected</Word><Word>public</Word>
+      <Word>return</Word><Word>static</Word><Word>strictfp</Word><Word>super</Word>
+      <Word>switch</Word><Word>synchronized</Word><Word>this</Word><Word>throw</Word>
+      <Word>throws</Word><Word>transient</Word><Word>try</Word><Word>void</Word>
+      <Word>volatile</Word><Word>while</Word><Word>record</Word><Word>sealed</Word>
+      <Word>yield</Word><Word>var</Word><Word>permits</Word><Word>module</Word>
+      <Word>requires</Word><Word>exports</Word>
+    </Keywords>
+
+    <Keywords color="Keyword">
+      <Word>true</Word><Word>false</Word><Word>null</Word>
+    </Keywords>
+
+    <Keywords color="Type">
+      <Word>String</Word><Word>Integer</Word><Word>Long</Word><Word>Double</Word>
+      <Word>Float</Word><Word>Boolean</Word><Word>Character</Word><Word>Object</Word>
+      <Word>System</Word><Word>List</Word><Word>Map</Word><Word>Set</Word>
+    </Keywords>
+
+    <Rule color="Number">\b(0[xX][0-9a-fA-F_]+|[0-9][0-9_]*(\.[0-9][0-9_]*)?[fFdDlL]?)\b</Rule>
+    <Rule color="Type">\b[A-Z][A-Za-z0-9_]*\b</Rule>
+  </RuleSet>
+</SyntaxDefinition>

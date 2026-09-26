@@ -1,0 +1,119 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    Java Studio 的界面层。
+
+    分工：C++ 那边编成 javastudio_core.dll，负责 JDK 探测、项目骨架、
+    编译运行、jar 解析、第三方库下载、图标解析；这里只管画界面。
+    两边通过 P/Invoke 说话（见 Native.cs）。
+
+    为什么是 net9.0-windows + WPF：
+      - 要 AvalonEdit 做代码编辑器，而 AvalonEdit 是 WPF 控件
+      - WindowsDesktop 运行时 8/9/10 本机都装了，不用额外下载
+  -->
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net9.0-windows</TargetFramework>
+    <UseWPF>true</UseWPF>
+    <Nullable>disable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <LangVersion>latest</LangVersion>
+    <!--
+      主程序 exe 名：studio-64.exe
+      跟 IDEA 的 idea64.exe 一个路子——名字里带 64，一眼看出是 64 位入口。
+      AssemblyName 决定 apphost 产出的 exe 文件名；RootNamespace 保持
+      JavaStudio 不变，这样所有 C# 代码里的 namespace 都不用动。
+    -->
+    <AssemblyName>studio-64</AssemblyName>
+    <RootNamespace>JavaStudio</RootNamespace>
+    <!--
+      应用身份信息。这些会编进 exe 的文件属性里（右键 → 属性 → 详细信息），
+      「关于」弹窗也直接读它们，不再另外写一份常量 —— 两处各写一份迟早会对不上。
+      版本跟安装器的资源脚本（setup/app.rc 的 FILEVERSION 1,0,0,0）保持一致。
+    -->
+    <!--
+      版本号的唯一来源是包根的 VERSION 文件（..\VERSION）：
+        - 这里读它 → 写进程序集特性 → 「关于」页运行时读回来
+        - build/mk.py 也读它 → -DJS_VERSION → 编进 javastudio_core.dll
+        - setup/app.rc 的字符串字段跟它对齐（数值字段只能填 0,1,0,0）
+      改版本只改那一个文件。界面里一个数字都不写 —— 写死的那个在升过一次
+      版本之后就开始骗人，而且没人会发现。
+      读不到（文件被删了 / 在别的目录单独编）就退回下面那个常量，不会构建失败。
+
+      版本号用 InformationalVersion 存，不用 AssemblyVersion：
+      AssemblyVersion 那四个字段只认数字，"-Preview.1" 这种后缀塞不进去，
+      会被悄悄丢掉。而「关于」页和「添加/删除程序」里要显示的就是
+      v0.1.0-Preview.1 这整串，所以取 AssemblyInformationalVersionAttribute。
+    -->
+    <JsVersionFile>$(MSBuildProjectDirectory)\..\VERSION</JsVersionFile>
+    <JsVersion Condition="Exists('$(JsVersionFile)')">$([System.IO.File]::ReadAllText('$(JsVersionFile)').Trim())</JsVersion>
+    <JsVersion Condition="'$(JsVersion)' == ''">0.1.0-Preview.1</JsVersion>
+    <Version>$(JsVersion)</Version>
+    <!--
+      数值版（Windows 文件资源那四个格子）也从 VERSION 推导：抠出开头的
+      "0.1.0"，补一个 .0 变成四段。这样改一次 VERSION，exe 属性里的
+      FileVersion 和 rc 里的 0,1,0,0 不会落在后面。
+      VERSION 请一直写成「主.次.修订[-后缀]」三段数字，不然这里推不出四段。
+    -->
+    <JsVersionNum>$([System.Text.RegularExpressions.Regex]::Match($(JsVersion), `\d+(\.\d+)*`).Value)</JsVersionNum>
+    <AssemblyVersion>$(JsVersionNum).0</AssemblyVersion>
+    <FileVersion>$(JsVersionNum).0</FileVersion>
+    <Company>Byteforge-工作室</Company>
+    <Product>Java Studio</Product>
+    <Description>Java 入门 IDE：项目管理、编译运行、Maven 依赖、Agent 面板</Description>
+    <Copyright>© 2026 Byteforge-工作室</Copyright>
+    <!-- 应用图标：编进 exe 资源，资源管理器/任务栏/Alt-Tab 都显示它；
+         同时标题栏也直接读这份 icon.ico（见 ui/Chrome.cs）。 -->
+    <ApplicationIcon>..\icon.ico</ApplicationIcon>
+    <PlatformTarget>x64</PlatformTarget>
+    <SatelliteResourceLanguages>zh-Hans</SatelliteResourceLanguages>
+    <!--
+      设置项要能被跨类读到，读的是「用户实际存进去的值」而不是「当前生效状态」——
+      Theme.Apply 只换字典、不改配置，原来 Config.Theme 的 set 又是 internal，
+      别的文件写不进去，只能用 Core.SetSetting 另写一份到 settings.txt 里凑合。
+      改成 public 让配置自己说了算，省掉那条影子记录。
+    -->
+    <InternalsVisibleTo>JavaStudio</InternalsVisibleTo>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="AvalonEdit" Version="6.3.1.120" />
+  </ItemGroup>
+
+  <!-- Java 语法高亮定义，编译进程序集，不落盘 -->
+  <ItemGroup>
+    <EmbeddedResource Include="Syntax\Java.xshd"
+                      LogicalName="JavaStudio.Syntax.Java.xshd" />
+  </ItemGroup>
+
+  <!-- 核心 DLL 跟着输出走，发布时也在同一个目录 -->
+  <ItemGroup>
+    <None Include="..\javastudio_core.dll" Link="javastudio_core.dll">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+    </None>
+  </ItemGroup>
+
+  <!-- 177 个 SVG 图标随程序一起分发（只要 .svg，references 是文档，不要） -->
+  <ItemGroup>
+    <None Include="..\assets\icons\*.svg">
+      <Link>assets\icons\%(Filename)%(Extension)</Link>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+    </None>
+    <None Include="..\assets\icons\icons.json">
+      <Link>assets\icons\icons.json</Link>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+    </None>
+  </ItemGroup>
+
+  <!-- 应用图标随程序分发（标题栏直接读这份 .ico）。Release 输出和发布目录都带。 -->
+  <ItemGroup>
+    <None Include="..\icon.ico">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+    </None>
+  </ItemGroup>
+
+</Project>

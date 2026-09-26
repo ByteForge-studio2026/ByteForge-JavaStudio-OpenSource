@@ -1,0 +1,111 @@
+#include "ui/theme.h"
+
+namespace spp {
+namespace ui {
+
+// ---------------------------------------------------------------- 深色
+//
+// 基色 #1E1E20 附近。整条灰阶只走「中性灰」，
+// RGB 三通道差不超过 4，避免偏蓝或偏黄。
+static const Palette kDark = {
+    /* bgDeepest    */ rgb(0x17, 0x17, 0x19),
+    /* bgBase       */ rgb(0x1E, 0x1E, 0x20),
+    /* bgPanel      */ rgb(0x25, 0x25, 0x28),
+    /* bgRaised     */ rgb(0x2C, 0x2C, 0x30),
+    /* bgHover      */ rgb(0x31, 0x31, 0x35),
+    /* bgActive     */ rgb(0x3A, 0x3A, 0x3F),
+    /* bgSelection  */ rgb(0x3A, 0x3A, 0x40),
+
+    /* fgPrimary    */ rgb(0xE4, 0xE4, 0xE6),
+    /* fgMuted      */ rgb(0x9A, 0x9A, 0xA0),
+    /* fgDim        */ rgb(0x5E, 0x5E, 0x64),
+    /* fgInvert     */ rgb(0x18, 0x18, 0x1A),
+
+    /* border       */ rgb(0x35, 0x35, 0x39),
+    /* borderFocus  */ rgb(0xC8, 0xC8, 0xCC),
+    /* divider      */ rgb(0x2A, 0x2A, 0x2E),
+
+    /* error        */ rgb(0xE5, 0x4C, 0x4C),
+    /* ok           */ rgb(0x4C, 0xC0, 0x6A),
+    /* errorBg      */ rgb(0x3A, 0x1F, 0x20),
+    /* okBg         */ rgb(0x1E, 0x33, 0x23),
+
+    // 语法高亮：不引入新色相，靠亮度分层
+    /* synKeyword   */ rgb(0xE8, 0xE8, 0xEC),   // 最亮，关键字要跳出来
+    /* synString    */ rgb(0xC4, 0xC4, 0xC8),
+    /* synNumber    */ rgb(0xD4, 0xD4, 0xD8),
+    /* synComment   */ rgb(0x6A, 0x6A, 0x70),   // 最暗，注释要退后
+    /* synFunction  */ rgb(0xDC, 0xDC, 0xE0),
+    /* synType      */ rgb(0xD0, 0xD0, 0xD4),
+    /* synOperator  */ rgb(0xA8, 0xA8, 0xAE),
+    /* synVariable  */ rgb(0xB8, 0xB8, 0xBC),
+    /* synColorRef  */ rgb(0x8C, 0x8C, 0x92),
+    /* synDirective */ rgb(0x7C, 0x7C, 0x84),
+
+    /* logInfo      */ rgb(0xA8, 0xA8, 0xAE),
+    /* logWarn      */ rgb(0xD8, 0xD8, 0xDC),
+    /* logError     */ rgb(0xE5, 0x4C, 0x4C),
+    /* logOk        */ rgb(0x4C, 0xC0, 0x6A),
+
+    /* dark         */ true,
+};
+
+// ---------------------------------------------------------------- 浅色
+
+static const Palette kLight = {
+    /* bgDeepest    */ rgb(0xE8, 0xE8, 0xEA),
+    /* bgBase       */ rgb(0xFA, 0xFA, 0xFB),
+    /* bgPanel      */ rgb(0xF0, 0xF0, 0xF2),
+    /* bgRaised     */ rgb(0xFF, 0xFF, 0xFF),
+    /* bgHover      */ rgb(0xE4, 0xE4, 0xE7),
+    /* bgActive     */ rgb(0xD6, 0xD6, 0xDA),
+    /* bgSelection  */ rgb(0xD0, 0xD0, 0xD6),
+
+    /* fgPrimary    */ rgb(0x1C, 0x1C, 0x1E),
+    /* fgMuted      */ rgb(0x66, 0x66, 0x6C),
+    /* fgDim        */ rgb(0xA0, 0xA0, 0xA6),
+    /* fgInvert     */ rgb(0xFA, 0xFA, 0xFB),
+
+    /* border       */ rgb(0xD2, 0xD2, 0xD6),
+    /* borderFocus  */ rgb(0x3A, 0x3A, 0x40),
+    /* divider      */ rgb(0xE0, 0xE0, 0xE3),
+
+    /* error        */ rgb(0xC4, 0x2E, 0x2E),
+    /* ok           */ rgb(0x2E, 0x94, 0x48),
+    /* errorBg      */ rgb(0xFB, 0xE6, 0xE6),
+    /* okBg         */ rgb(0xE4, 0xF4, 0xE8),
+
+    /* synKeyword   */ rgb(0x18, 0x18, 0x1A),
+    /* synString    */ rgb(0x44, 0x44, 0x4A),
+    /* synNumber    */ rgb(0x33, 0x33, 0x38),
+    /* synComment   */ rgb(0x92, 0x92, 0x98),
+    /* synFunction  */ rgb(0x24, 0x24, 0x28),
+    /* synType      */ rgb(0x2E, 0x2E, 0x34),
+    /* synOperator  */ rgb(0x60, 0x60, 0x66),
+    /* synVariable  */ rgb(0x4A, 0x4A, 0x50),
+    /* synColorRef  */ rgb(0x78, 0x78, 0x7E),
+    /* synDirective */ rgb(0x88, 0x88, 0x8E),
+
+    /* logInfo      */ rgb(0x60, 0x60, 0x66),
+    /* logWarn      */ rgb(0x3A, 0x3A, 0x40),
+    /* logError     */ rgb(0xC4, 0x2E, 0x2E),
+    /* logOk        */ rgb(0x2E, 0x94, 0x48),
+
+    /* dark         */ false,
+};
+
+// 默认走浅色。IDE 是白天用的东西，深色留作可选项。
+static bool g_dark = false;
+
+const Palette& dark() { return kDark; }
+const Palette& light() { return kLight; }
+const Palette& current() { return g_dark ? kDark : kLight; }
+void setDark(bool d) { g_dark = d; }
+
+const Metrics& metrics() {
+    static const Metrics m;
+    return m;
+}
+
+}  // namespace ui
+}  // namespace spp

@@ -1,0 +1,448 @@
+<Window x:Class="JavaStudio.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Java Studio" Height="700" Width="1040" MinWidth="720" MinHeight="480"
+        Background="{DynamicResource Brush.Bg.Base}"
+        FontFamily="Microsoft YaHei UI"
+        UseLayoutRounding="True"
+        SnapsToDevicePixels="True"
+        Closing="OnWindowClosing"
+        WindowStyle="None">
+
+  <!--
+    布局照 IDEA 摆：
+
+      菜单栏
+      主工具栏（纯图标，IDEA 也这样）
+      ┌──────────┬────────────────────────────────┐
+      │ 项目 标题栏 │  编辑器标签 + 代码              │
+      │ 项目树     │  面包屑（底边）                 │
+      ├──────────┴────────────────────────────────┤
+      │ 工具窗口内容（输出 / 问题）                   │
+      │ 工具窗口按钮条（输出 · 问题）                  │
+      ├───────────────────────────────────────────┤
+      │ 状态栏：状态 · 主类 · ... · JDK/编码/行尾     │
+      └───────────────────────────────────────────┘
+
+    控件样式全在 Themes\Controls.xaml，这里只管摆位置。
+  -->
+
+  <DockPanel>
+
+    <!-- ============================================ 菜单栏 -->
+    <Menu x:Name="MainMenu" DockPanel.Dock="Top" Height="30" VerticalAlignment="Center">
+      <!-- Tag 是语言表的 key，切中英文时按它批量换文案（见 Lang.ApplyMenu）。
+           编辑那几个项本来就靠 Tag 区分动作，所以它们的 key 用 Header 直写。 -->
+      <MenuItem Header="文件" Tag="m.file" Style="{StaticResource TopMenuItem}">
+        <MenuItem Header="新建项目..." Tag="m.newProject" InputGestureText="Ctrl+Shift+N" Click="OnNewProject"/>
+        <MenuItem Header="打开项目..." Tag="m.openProject" InputGestureText="Ctrl+O" Click="OnOpenProject"/>
+        <Separator/>
+        <MenuItem Header="新建文件" Tag="m.newFile" InputGestureText="Ctrl+N" Click="OnNewFile"/>
+        <MenuItem Header="保存" Tag="m.save" InputGestureText="Ctrl+S" Click="OnSave"/>
+        <MenuItem Header="全部保存" Tag="m.saveAll" InputGestureText="Ctrl+Shift+S" Click="OnSaveAll"/>
+        <Separator/>
+        <MenuItem Header="关闭项目" Tag="m.closeProject" Click="OnCloseProject"/>
+        <MenuItem Header="删除项目" Tag="m.deleteProject" Click="OnDeleteProject"/>
+        <MenuItem Header="退出" Tag="m.exit" InputGestureText="Alt+F4" Click="OnExit"/>
+      </MenuItem>
+      <MenuItem Header="编辑" Tag="m.edit" Style="{StaticResource TopMenuItem}">
+        <MenuItem Header="撤销" Tag="m.undo" InputGestureText="Ctrl+Z" Click="OnEdit"/>
+        <MenuItem Header="重做" Tag="m.redo" InputGestureText="Ctrl+Y" Click="OnEdit"/>
+        <MenuItem Header="回到上次更改前" Tag="m.revert" Click="OnRevert"/>
+        <Separator/>
+        <MenuItem Header="剪切" Tag="m.cut" InputGestureText="Ctrl+X" Click="OnEdit"/>
+        <MenuItem Header="复制" Tag="m.copy" InputGestureText="Ctrl+C" Click="OnEdit"/>
+        <MenuItem Header="粘贴" Tag="m.paste" InputGestureText="Ctrl+V" Click="OnEdit"/>
+        <MenuItem Header="全选" Tag="m.selectAll" InputGestureText="Ctrl+A" Click="OnEdit"/>
+      </MenuItem>
+      <MenuItem Header="视图" Tag="m.view" Style="{StaticResource TopMenuItem}">
+        <MenuItem Header="主页" Tag="m.home" InputGestureText="Esc" Click="OnHome"/>
+        <MenuItem Header="编辑器" Tag="m.editor" Click="OnWorkspace"/>
+        <Separator/>
+        <MenuItem Header="项目工具窗口" Tag="m.tree" Click="OnToggleTree"/>
+        <MenuItem Header="输出工具窗口" Tag="m.bottom" InputGestureText="Ctrl+L" Click="OnToggleBottom"/>
+        <Separator/>
+        <MenuItem Header="切换主题" Tag="m.theme" InputGestureText="Ctrl+T" Click="OnToggleTheme"/>
+        <MenuItem Header="设置" Tag="m.settings" InputGestureText="Ctrl+," Click="OnSettings"/>
+        <Separator/>
+        <MenuItem Header="预览" Tag="m.preview" InputGestureText="Ctrl+Shift+P" Click="OnPreview"/>
+      </MenuItem>
+      <MenuItem Header="导航" Tag="m.nav" Style="{StaticResource TopMenuItem}">
+        <MenuItem Header="主类" Tag="m.main" Click="OnGotoMain"/>
+      </MenuItem>
+      <MenuItem Header="运行" Tag="m.run" Style="{StaticResource TopMenuItem}">
+        <MenuItem Header="编译" Tag="m.compile" InputGestureText="Ctrl+B" Click="OnCompile"/>
+        <MenuItem Header="编译并运行" Tag="m.compileRun" InputGestureText="F5" Click="OnCompileRun"/>
+        <MenuItem Header="只运行" Tag="m.runOnly" InputGestureText="Shift+F5" Click="OnRunOnly"/>
+        <Separator/>
+        <MenuItem Header="创建运行环境" Tag="m.venv" Click="OnCreateVenv"/>
+        <MenuItem Header="在虚拟环境中运行" Tag="m.venvRun" Click="OnVenvRun"/>
+        <Separator/>
+        <MenuItem Header="代码检查" Tag="m.check" InputGestureText="Ctrl+Shift+K" Click="OnCheck"/>
+      </MenuItem>
+      <MenuItem Header="工具" Tag="m.tools" Style="{StaticResource TopMenuItem}">
+        <MenuItem Header="第三方库..." Tag="m.libs" InputGestureText="Ctrl+Shift+L" Click="OnLibs"/>
+      </MenuItem>
+      <MenuItem Header="帮助" Tag="m.help" Style="{StaticResource TopMenuItem}">
+        <MenuItem Header="新手引导" Tag="m.guide" Click="OnGuide"/>
+        <Separator/>
+        <MenuItem Header="关于 Java Studio" Tag="m.about" Click="OnAbout"/>
+      </MenuItem>
+    </Menu>
+
+    <!-- ============================================ 主工具栏（按钮在后台代码里加） -->
+    <Border x:Name="Toolbar" DockPanel.Dock="Top" Height="42"
+            Background="{DynamicResource Brush.Bg.Panel}"
+            BorderBrush="{DynamicResource Brush.Border}" BorderThickness="0,0,0,1">
+      <Grid>
+        <!-- 左右各占一列。以前两个 StackPanel 都堆在第 0 列、只靠
+             HorizontalAlignment 分开——左组一变宽（比如中间插了个 JDK 下拉）
+             就把右组往左挤，图标会叠到一块儿。分列之后互不干扰。 -->
+        <Grid.ColumnDefinitions>
+          <ColumnDefinition Width="*"/>
+          <ColumnDefinition Width="Auto"/>
+        </Grid.ColumnDefinitions>
+        <StackPanel x:Name="ToolbarLeft" Grid.Column="0" Orientation="Horizontal"
+                    Margin="8,0" HorizontalAlignment="Left" VerticalAlignment="Center"/>
+        <StackPanel x:Name="ToolbarRight" Grid.Column="1" Orientation="Horizontal"
+                    Margin="8,0" HorizontalAlignment="Right" VerticalAlignment="Center"/>
+      </Grid>
+    </Border>
+
+    <!-- ============================================ 状态栏 -->
+    <StatusBar x:Name="StatusBarTop" DockPanel.Dock="Bottom" Height="24">
+      <StatusBarItem>
+        <StackPanel Orientation="Horizontal">
+          <Ellipse x:Name="StatusDot" Width="8" Height="8" Margin="4,0,6,0"
+                   VerticalAlignment="Center" Fill="{DynamicResource Brush.Ok}"/>
+          <!-- 这里的初始文案由 Lang.Load 之后的 SetStatus 覆盖，
+               写死中文会在英文模式下先闪一下中文，所以先留空。 -->
+          <TextBlock x:Name="StatusLeft" FontSize="11"
+                     VerticalAlignment="Center" MaxWidth="560" TextTrimming="CharacterEllipsis"/>
+        </StackPanel>
+      </StatusBarItem>
+      <StatusBarItem HorizontalAlignment="Center">
+        <TextBlock x:Name="StatusMid" FontSize="11" VerticalAlignment="Center"
+                   Foreground="{DynamicResource Brush.Fg.Muted}"/>
+      </StatusBarItem>
+      <StatusBarItem HorizontalAlignment="Right">
+        <TextBlock x:Name="StatusRight" FontSize="11" Margin="0,0,10,0"
+                   VerticalAlignment="Center"
+                   Foreground="{DynamicResource Brush.Fg.Dim}"/>
+      </StatusBarItem>
+    </StatusBar>
+
+    <!-- ============================================ 工作区 -->
+    <Grid x:Name="Workbench">
+      <Grid.RowDefinitions>
+        <RowDefinition Height="*" MinHeight="120"/>
+        <RowDefinition Height="4" x:Name="BottomSplitRow"/>
+        <RowDefinition Height="170" x:Name="BottomRow"/>
+        <RowDefinition Height="30" x:Name="BottomBarRow"/>
+      </Grid.RowDefinitions>
+      <Grid.ColumnDefinitions>
+        <ColumnDefinition Width="260" x:Name="TreeCol"/>
+        <ColumnDefinition Width="4"/>
+        <ColumnDefinition Width="*"/>
+        <!-- 最右两列留给 Agent 面板（To-tode Studio Pro）。
+             收起态 AgentCol=34（只露右侧那个入口图标），展开态 =300。
+             没打开项目时整列 Visibility=Collapsed，宽度不影响布局。 -->
+        <ColumnDefinition Width="4" x:Name="AgentSplitCol"/>
+        <ColumnDefinition Width="300" x:Name="AgentCol"/>
+      </Grid.ColumnDefinitions>
+
+      <!-- 项目工具窗口：标题栏 + 树 -->
+      <Border Grid.Row="0" Grid.Column="0"
+              Background="{DynamicResource Brush.Bg.Panel}"
+              BorderBrush="{DynamicResource Brush.Border}" BorderThickness="0,0,1,0">
+        <Grid>
+          <Grid.RowDefinitions>
+            <RowDefinition Height="30"/>
+            <RowDefinition Height="*"/>
+          </Grid.RowDefinitions>
+
+          <!-- IDEA 的工具窗口标题栏：左边名字，右边两个小图标 -->
+          <Border Grid.Row="0" BorderBrush="{DynamicResource Brush.Border}"
+                  BorderThickness="0,0,0,1">
+            <DockPanel Margin="10,0,6,0">
+              <!-- Tag 是给 Lang.Translate 认的 key；以前这里写死中文且没有 Tag，
+                   所以切英文后这块一直跟着显示「项目」。 -->
+              <TextBlock x:Name="TreeTitle" DockPanel.Dock="Left" Text="项目" Tag="tree.title"
+                         FontSize="11"
+                         VerticalAlignment="Center" FontWeight="SemiBold"
+                         Foreground="{DynamicResource Brush.Fg.Muted}"/>
+              <StackPanel x:Name="TreeActions" DockPanel.Dock="Right"
+                          Orientation="Horizontal" HorizontalAlignment="Right"
+                          VerticalAlignment="Center"/>
+            </DockPanel>
+          </Border>
+
+          <TreeView x:Name="Tree" Grid.Row="1"
+                    SelectedItemChanged="OnTreeSelectionChanged"
+                    PreviewMouseRightButtonDown="OnTreeRightDown"
+                    ContextMenuOpening="OnTreeMenuOpening">
+            <TreeView.ContextMenu>
+              <!-- 每项都得带 Tag，否则 Lang.ApplyMenu 认不出来，切语言不会换。
+                   菜单内容按右键对象变：文件只给「改/删」，文件夹和空白（根目录）才给「新建/导入」，
+                   具体见 OnTreeMenuOpened。 -->
+              <ContextMenu Opened="OnTreeMenuOpened" Closed="OnTreeMenuClosed">
+                <MenuItem x:Name="MiNewClass" Header="新建 Java 类" Tag="ni.javaClass" Click="OnNewJavaClass"/>
+                <MenuItem x:Name="MiNewJava" Header="新建 Java 文件" Tag="ni.javaFile" Click="OnNewJavaFile"/>
+                <MenuItem x:Name="MiNewFolder" Header="新建文件夹" Tag="ni.folder" Click="OnNewFolder"/>
+                <MenuItem x:Name="MiNewXml" Header="新建 XML 文件" Tag="ni.xml" Click="OnNewXml"/>
+                <MenuItem x:Name="MiNewCustom" Header="新建自定义后缀文件" Tag="ni.custom" Click="OnNewCustom"/>
+                <Separator x:Name="SepCreate"/>
+                <MenuItem x:Name="MiImportFile" Header="导入文件..." Tag="m.importFile" Click="OnImportFile"/>
+                <MenuItem x:Name="MiImportDir" Header="导入文件夹..." Tag="m.importDir" Click="OnImportDir"/>
+                <Separator x:Name="SepImport"/>
+                <MenuItem x:Name="MiRename" Header="重命名..." Tag="m.rename" Click="OnRenameItem"/>
+                <MenuItem x:Name="MiDelete" Header="删除" Tag="m.delete" Click="OnDeleteItem"/>
+                <Separator x:Name="SepEdit"/>
+                <MenuItem x:Name="MiCopyPath" Header="复制路径" Tag="m.copyPath" Click="OnCopyPath"/>
+              </ContextMenu>
+            </TreeView.ContextMenu>
+            <TreeView.ItemTemplate>
+              <HierarchicalDataTemplate ItemsSource="{Binding Children}">
+                <StackPanel Orientation="Horizontal">
+                  <TextBlock Text="{Binding Glyph}" Margin="0,0,6,0" FontSize="11"
+                             Foreground="{DynamicResource Brush.Fg.Dim}"/>
+                  <TextBlock Text="{Binding Name}"/>
+                </StackPanel>
+              </HierarchicalDataTemplate>
+            </TreeView.ItemTemplate>
+          </TreeView>
+        </Grid>
+      </Border>
+
+      <GridSplitter Grid.Row="0" Grid.Column="1" Width="4" HorizontalAlignment="Stretch"
+                    Background="{DynamicResource Brush.Border}"/>
+
+      <!-- 编辑器：标签 + 代码 + 面包屑 -->
+      <Grid Grid.Row="0" Grid.Column="2" Background="{DynamicResource Brush.Bg.Editor}">
+        <Grid.RowDefinitions>
+          <RowDefinition Height="*"/>
+          <RowDefinition Height="26" x:Name="CrumbRow"/>
+        </Grid.RowDefinitions>
+        <TabControl x:Name="Editors" Grid.Row="0"
+                    SelectionChanged="OnEditorTabChanged"/>
+        <Border x:Name="Crumb" Grid.Row="1" Visibility="Collapsed"
+                BorderBrush="{DynamicResource Brush.Border}" BorderThickness="0,1,0,0">
+          <TextBlock x:Name="CrumbText" FontSize="11" Margin="12,0"
+                     VerticalAlignment="Center" TextTrimming="CharacterEllipsis"
+                     Foreground="{DynamicResource Brush.Fg.Dim}"/>
+        </Border>
+      </Grid>
+
+      <GridSplitter x:Name="BottomSplit" Grid.Row="1" Grid.ColumnSpan="5" Height="4"
+                    HorizontalAlignment="Stretch"
+                    Background="{DynamicResource Brush.Border}"/>
+
+      <!-- 工具窗口内容：输出 / 问题，切换靠 Visibility -->
+      <Border x:Name="BottomBody" Grid.Row="2" Grid.ColumnSpan="5"
+              Background="{DynamicResource Brush.Bg.Panel}">
+        <!-- 三个面板叠一块儿，靠 Visibility 切：
+             输出 = javac 编译输出，日志 = java 跑起来的输出，问题 = 诊断 -->
+        <Grid>
+          <TextBox x:Name="BuildOut" IsReadOnly="True" FontFamily="Cascadia Mono, Consolas"
+                   FontSize="12" VerticalScrollBarVisibility="Auto" TextWrapping="Wrap"
+                   Background="Transparent" BorderThickness="0" Margin="12,8"
+                   Foreground="{DynamicResource Brush.Fg.Muted}"/>
+          <TextBox x:Name="RunOut" Visibility="Collapsed" IsReadOnly="True"
+                   FontFamily="Cascadia Mono, Consolas"
+                   FontSize="12" VerticalScrollBarVisibility="Auto" TextWrapping="Wrap"
+                   Background="Transparent" BorderThickness="0" Margin="12,8"
+                   Foreground="{DynamicResource Brush.Fg.Muted}"/>
+          <ListBox x:Name="Problems" Visibility="Collapsed" Background="Transparent"
+                   BorderThickness="0" Padding="10,6"
+                   Foreground="{DynamicResource Brush.Fg.Muted}"
+                   MouseDoubleClick="OnProblemJump"/>
+        </Grid>
+      </Border>
+
+      <!-- 工具窗口按钮条。IDEA 里这排永远在底部，点一下切内容 -->
+      <Border x:Name="BottomBar" Grid.Row="3" Grid.ColumnSpan="5"
+              Background="{DynamicResource Brush.Bg.Panel}"
+              BorderBrush="{DynamicResource Brush.Border}" BorderThickness="0,1,0,0">
+        <DockPanel Margin="6,0">
+          <StackPanel x:Name="BottomBarLeft" DockPanel.Dock="Left"
+                      Orientation="Horizontal" VerticalAlignment="Center"/>
+          <StackPanel x:Name="BottomBarRight" DockPanel.Dock="Right"
+                      Orientation="Horizontal" HorizontalAlignment="Right"
+                      VerticalAlignment="Center"/>
+        </DockPanel>
+      </Border>
+
+      <!-- ============================================ Agent 面板（To-tode Studio Pro）
+           占最右一列、纵向铺满。收起时整列缩到 34，只留右侧那个入口按钮；
+           展开时显示完整面板，面板头部左侧的「收回」按钮再把它收回去。
+           没有打开项目时整列隐藏 —— 这个面板是跟随项目的。 -->
+      <GridSplitter x:Name="AgentSplit" Grid.Row="0" Grid.Column="3" Grid.RowSpan="4"
+                    Width="4" HorizontalAlignment="Stretch" Visibility="Collapsed"
+                    Background="{DynamicResource Brush.Border}"/>
+
+      <Grid x:Name="AgentArea" Grid.Row="0" Grid.Column="4" Grid.RowSpan="4"
+            Visibility="Collapsed" Background="{DynamicResource Brush.Bg.Base}">
+        <!-- 收起态：右侧那条竖着的入口 -->
+        <Button x:Name="AgentLaunch" VerticalAlignment="Stretch" HorizontalAlignment="Stretch"
+                Background="Transparent" BorderThickness="0" Click="OnToggleAgent"
+                ToolTip="To-tode Studio Pro（Ctrl+Alt+A）"/>
+        <!-- 展开态：真正的面板，构造时由后台代码塞进来 -->
+        <ContentControl x:Name="AgentHost" Visibility="Collapsed"/>
+      </Grid>
+
+      <!-- 主页盖住整个工作区（含工具窗口），切主题/打开项目时再让开 -->
+      <ScrollViewer x:Name="HomeView" Grid.Row="0" Grid.Column="0"
+                    Grid.RowSpan="4" Grid.ColumnSpan="5" Visibility="Visible"
+                    VerticalScrollBarVisibility="Auto"
+                    HorizontalScrollBarVisibility="Disabled"
+                    Background="{DynamicResource Brush.Bg.Base}">
+        <StackPanel x:Name="HomePanel" Margin="56,36,56,40"/>
+      </ScrollViewer>
+
+      <!-- ============================================ API 小弹窗
+           主窗口内的一张小卡片（不是独立窗口）。没填 API 又想进
+           To-code Studio Pro 时弹出来，填完直接进对话界面。 -->
+      <Grid x:Name="ApiGate" Grid.Row="0" Grid.Column="0" Grid.RowSpan="4" Grid.ColumnSpan="5"
+            Visibility="Collapsed" Background="#99000000">
+        <Border Width="392" HorizontalAlignment="Center" VerticalAlignment="Center"
+                CornerRadius="14" Padding="20,18" SnapsToDevicePixels="True"
+                Background="{DynamicResource Brush.Bg.Base}"
+                BorderBrush="{DynamicResource Brush.Border}" BorderThickness="1">
+          <Border.Effect>
+            <DropShadowEffect BlurRadius="24" ShadowDepth="0" Opacity="0.4" Color="Black"/>
+          </Border.Effect>
+          <StackPanel x:Name="ApiGateBody"/>
+        </Border>
+      </Grid>
+
+      <!-- ============================================ 主窗口里的弹窗
+           设置 / 关于 / 新建项目 / 第三方库这些原来都是独立小窗口，现在改成
+           「主窗口里的一个弹窗」：工作区上面压一层半透明遮罩，中间一张圆角卡片
+           （见 DlgHost.cs）。
+
+           为什么不是独立窗口：拖动 / 缩放主窗口时它不会跟着走，还会跑到主窗口外面去。
+           为什么不是铺满工作区的一整页：那是全屏，不像弹窗，用户一眼看不出「这是个
+           临时开的东西，关掉就回去了」。
+
+           卡片尺寸跟着主窗口：主窗口小它就小，主窗口大到超过卡片自己的理想尺寸
+           就按理想尺寸来（理想尺寸由各弹窗自己说，见 DlgPanel.WantWidth/WantHeight）。
+
+           放在最后 = 盖在 Workbench 和 ApiGate 之上。 -->
+      <Grid x:Name="DlgHostLayer" Grid.Row="0" Grid.Column="0" Grid.RowSpan="4" Grid.ColumnSpan="5"
+            Visibility="Collapsed">
+
+        <!-- 遮罩。点它 = 取消，跟点关闭一个意思。
+             ⚠️ 必须有背景色才收得到鼠标事件：Background=null 的控件不参与命中测试，
+             点了会直接穿透到下面的工作区去。 -->
+        <Border x:Name="DlgScrim" Background="{DynamicResource Brush.Scrim}"
+                MouseLeftButtonUp="OnDlgScrimClick"/>
+
+        <!-- 弹窗卡片本体 -->
+        <Border x:Name="DlgCard" HorizontalAlignment="Center" VerticalAlignment="Center"
+                CornerRadius="10" BorderThickness="1"
+                Background="{DynamicResource Brush.Bg.Base}"
+                BorderBrush="{DynamicResource Brush.Border}"
+                SnapsToDevicePixels="True">
+          <Border.Effect>
+            <!-- 一层淡投影，让卡片看起来是「浮」在工作区上面的 -->
+            <DropShadowEffect Color="#000000" Opacity="0.28" BlurRadius="24"
+                              ShadowDepth="4" Direction="270"/>
+          </Border.Effect>
+          <Grid>
+            <Grid.RowDefinitions>
+              <RowDefinition Height="38"/>
+              <RowDefinition Height="*"/>
+            </Grid.RowDefinitions>
+
+            <!-- 标题栏：图标 + 标题 + 关闭 -->
+            <Border Grid.Row="0" CornerRadius="10,10,0,0"
+                    Background="{DynamicResource Brush.Bg.Panel}"
+                    BorderBrush="{DynamicResource Brush.Border}" BorderThickness="0,0,0,1">
+              <Grid>
+                <Grid.ColumnDefinitions>
+                  <ColumnDefinition Width="*"/>
+                  <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+
+                <StackPanel Grid.Column="0" Orientation="Horizontal"
+                            VerticalAlignment="Center" Margin="14,0,0,0">
+                  <!-- 咖啡杯（assets/icons/coffee.svg）。
+                       直接把 path 写在这儿而不是代码里 Icons.Visual：
+                       Stroke 走 DynamicResource 才能在切主题时跟着换色，
+                       代码里 new 出来的画刷是死的，深色下会变成黑底黑线。
+                       viewBox 24×24 → 缩到 17，描边 2 要按同比例调成 1.4，
+                       不然缩完线条太粗。 -->
+                  <Viewbox x:Name="DlgHostLogo" Width="17" Height="17"
+                           VerticalAlignment="Center" IsHitTestVisible="False">
+                    <Canvas Width="24" Height="24">
+                      <Path Data="M17 8h1a4 4 0 1 1 0 8h-1"
+                            Stroke="{DynamicResource Brush.Fg.Primary}" StrokeThickness="2"
+                            StrokeStartLineCap="Round" StrokeEndLineCap="Round"/>
+                      <Path Data="M3 8h14v9a4 4 0 0 1-4 4H7a4 4 0 0 1-4-4Z"
+                            Stroke="{DynamicResource Brush.Fg.Primary}" StrokeThickness="2"
+                            StrokeStartLineCap="Round" StrokeEndLineCap="Round"
+                            StrokeLineJoin="Round"/>
+                      <Path Data="M6 2 L6 4 M10 2 L10 4 M14 2 L14 4"
+                            Stroke="{DynamicResource Brush.Fg.Primary}" StrokeThickness="2"
+                            StrokeStartLineCap="Round" StrokeEndLineCap="Round"/>
+                    </Canvas>
+                  </Viewbox>
+                  <TextBlock x:Name="DlgHostTitle" FontSize="13"
+                             VerticalAlignment="Center" Margin="9,0,0,0"
+                             Foreground="{DynamicResource Brush.Fg.Primary}"/>
+                </StackPanel>
+
+                <!-- 关闭。图标直接写成 Path 而不是代码里塞 Icons.Visual：
+                     DynamicResource 的 Stroke 才能跟着主题换色，
+                     代码里 new 出来的画刷在切主题时不会变。
+                     ⚠️ 几何写死在 8×8 的框里、bounds 中心正好 (4,4)，
+                     跟 Chrome.cs 里 TrafficBtn 那个「×」是同一份，不会画歪。 -->
+                <Button x:Name="DlgClose" Grid.Column="1"
+                        Width="38" Height="38" Padding="0" Cursor="Hand"
+                        ToolTip="关闭" Background="Transparent" BorderThickness="0"
+                        Click="OnDlgClose">
+                  <Button.Template>
+                    <ControlTemplate TargetType="Button">
+                      <Border x:Name="Bd" Background="Transparent" CornerRadius="0,10,0,0">
+                        <Path Width="8" Height="8" Stretch="None"
+                              HorizontalAlignment="Center" VerticalAlignment="Center"
+                              Data="M2.1,2.1 L5.9,5.9 M5.9,2.1 L2.1,5.9"
+                              Stroke="{DynamicResource Brush.Fg.Primary}"
+                              StrokeThickness="1.6" StrokeStartLineCap="Round"
+                              StrokeEndLineCap="Round"/>
+                      </Border>
+                      <ControlTemplate.Triggers>
+                        <Trigger Property="IsMouseOver" Value="True">
+                          <Setter TargetName="Bd" Property="Background"
+                                  Value="{DynamicResource Brush.Bg.Hover}"/>
+                        </Trigger>
+                      </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                  </Button.Template>
+                </Button>
+              </Grid>
+            </Border>
+
+            <!-- 对话框内容有**两个**落脚点，二选一：
+                 DlgHostBody —— 套在 ScrollViewer 里，内容比卡片高就整页滚（默认，绝大多数弹窗）；
+                 DlgHostFill —— 直接顶到卡片高度，给「自己内部就有滚动区」的弹窗用
+                                （第三方库：只有中间那条列表该滚，标题、导航、按钮都不能跟着走）。
+
+                 ⚠️ 后者**绝不能**也躺在 ScrollViewer 里。ScrollViewer 给子元素的可用高度
+                 是无限的，里面那个 Grid 的 `*` 行就被撑到内容自然高度（实测 3948px），
+                 于是里层的 ScrollViewer 拿到一个不受限的高度 —— view == extent、
+                 scrollable == 0，它自己永远不滚，滚轮越过它落到外面那层。
+                 界面上就是「拨中间的列表毫无反应，整张卡片跟着往上跑」。 -->
+            <ScrollViewer x:Name="DlgHostScroll" Grid.Row="1"
+                          VerticalScrollBarVisibility="Auto"
+                          HorizontalScrollBarVisibility="Disabled"
+                          Padding="0,0,0,16">
+              <ContentControl x:Name="DlgHostBody"/>
+            </ScrollViewer>
+            <ContentControl x:Name="DlgHostFill" Grid.Row="1" Visibility="Collapsed"/>
+          </Grid>
+        </Border>
+      </Grid>
+    </Grid>
+  </DockPanel>
+</Window>

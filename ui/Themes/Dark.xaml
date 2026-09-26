@@ -1,0 +1,53 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+  <!--
+    深色（Darcula 一路的配色，和 IDEA 保持一致）。
+
+    跟浅色反着来：编辑区（Bg.Editor）是最深的一块，侧栏和工具条
+    比它亮一档，窗口底夹在中间。选中项用偏蓝的 Bg.Active，
+    这样在深色里也能一眼看出焦点在哪。
+  -->
+
+  <Color x:Key="Bg.Base">#232529</Color>
+  <Color x:Key="Bg.Panel">#2B2E33</Color>
+  <Color x:Key="Bg.Editor">#1D1F22</Color>
+  <Color x:Key="Bg.Raised">#33373D</Color>
+  <Color x:Key="Bg.Hover">#34383E</Color>
+  <Color x:Key="Bg.Active">#33465F</Color>
+  <Color x:Key="Border">#383C42</Color>
+  <Color x:Key="Fg.Primary">#DCE0E6</Color>
+  <Color x:Key="Fg.Muted">#A0A6AF</Color>
+  <Color x:Key="Fg.Dim">#767C85</Color>
+  <!-- 弹窗遮罩。深色下压得更狠一点，不然卡片和工作区糊在一起分不出层次 -->
+  <Color x:Key="Scrim">#99000000</Color>
+  <Color x:Key="Accent">#5B9CF8</Color>
+  <Color x:Key="Ok">#4CAF50</Color>
+  <Color x:Key="Error">#F0616B</Color>
+  <Color x:Key="Warn">#D7A54A</Color>
+
+  <!-- 编辑器语法色 -->
+  <Color x:Key="Syn.Keyword">#CC7832</Color>
+  <Color x:Key="Syn.Type">#56A8F5</Color>
+  <Color x:Key="Syn.String">#6AAB73</Color>
+  <Color x:Key="Syn.Number">#A9B7C6</Color>
+  <Color x:Key="Syn.Comment">#7A7A7A</Color>
+  <Color x:Key="Syn.Plain">#DCE0E6</Color>
+
+  <SolidColorBrush x:Key="Brush.Bg.Base" Color="{DynamicResource Bg.Base}"/>
+  <SolidColorBrush x:Key="Brush.Bg.Panel" Color="{DynamicResource Bg.Panel}"/>
+  <SolidColorBrush x:Key="Brush.Bg.Editor" Color="{DynamicResource Bg.Editor}"/>
+  <SolidColorBrush x:Key="Brush.Bg.Raised" Color="{DynamicResource Bg.Raised}"/>
+  <SolidColorBrush x:Key="Brush.Bg.Hover" Color="{DynamicResource Bg.Hover}"/>
+  <SolidColorBrush x:Key="Brush.Bg.Active" Color="{DynamicResource Bg.Active}"/>
+  <SolidColorBrush x:Key="Brush.Border" Color="{DynamicResource Border}"/>
+  <SolidColorBrush x:Key="Brush.Fg.Primary" Color="{DynamicResource Fg.Primary}"/>
+  <SolidColorBrush x:Key="Brush.Fg.Muted" Color="{DynamicResource Fg.Muted}"/>
+  <SolidColorBrush x:Key="Brush.Fg.Dim" Color="{DynamicResource Fg.Dim}"/>
+  <SolidColorBrush x:Key="Brush.Scrim" Color="{DynamicResource Scrim}"/>
+  <SolidColorBrush x:Key="Brush.Accent" Color="{DynamicResource Accent}"/>
+  <SolidColorBrush x:Key="Brush.Ok" Color="{DynamicResource Ok}"/>
+  <SolidColorBrush x:Key="Brush.Error" Color="{DynamicResource Error}"/>
+  <SolidColorBrush x:Key="Brush.Warn" Color="{DynamicResource Warn}"/>
+
+</ResourceDictionary>
